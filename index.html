@@ -1,0 +1,361 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Livestock AI Monitor</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <style>#cowDetectionCard .detector-grid { grid-template-columns: minmax(0, 1fr); }</style>
+</head>
+<body>
+  <header>
+    <div>
+      <div class="eyebrow">SYNTAX ERROR • HACKATHON MVP</div>
+      <h1>Livestock AI Monitor</h1>
+      <p>Early health-risk detection + automatic farmer voice alert</p>
+    </div>
+    <div class="pill">DEMO MODE</div>
+  </header>
+
+  <main>
+    <section class="grid stats">
+      <div class="card stat"><span>Animals monitored</span><strong id="total">12</strong></div>
+      <div class="card stat"><span>Low risk</span><strong id="low">12</strong></div>
+      <div class="card stat"><span>Medium risk</span><strong id="medium">0</strong></div>
+      <div class="card stat"><span>High risk</span><strong id="high">0</strong></div>
+    </section>
+
+    <section class="grid main-grid">
+      <div class="card">
+        <div class="section-title">
+          <h2>Live camera</h2>
+          <span id="cameraStatus" class="status-dot is-off">OFF</span>
+        </div>
+        <video id="camera" autoplay playsinline muted></video>
+        <div class="actions camera-actions">
+          <button id="cameraBtn" class="secondary">Start rear camera</button>
+          <button id="stopCameraBtn" class="secondary">Stop camera</button>
+        </div>
+        <div class="note">This camera is a live preview only. To detect livestock, choose a photo in the Photo detection section below. Sensor/behaviour values in the existing dashboard remain simulated.</div>
+        <div id="cameraMessage" class="message" role="status" aria-live="polite"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h2>Animals</h2>
+          <span>12 detected</span>
+        </div>
+        <div id="animalList" class="animal-list"></div>
+      </div>
+    </section>
+
+    <section class="card detector-card" id="cowDetectionCard">
+      <div class="section-title">
+        <h2>Livestock Camera &amp; Species Detection</h2>
+        <span class="pill">YOLO VISION</span>
+      </div>
+      <p>Upload a livestock photo to detect supported animals. The live camera above is a preview only; livestock detection runs on uploaded photos.</p>
+
+      <div class="detector-grid">
+        <div class="detector-panel">
+          <h3>Photo detection</h3>
+          <label for="imageUpload">Choose a livestock photo</label>
+          <input id="imageUpload" type="file" accept="image/*" />
+          <button id="detectUploadBtn" class="primary">Detect livestock in photo</button>
+          <div id="imageMessage" class="message" role="status" aria-live="polite"></div>
+          <div id="imageResult" class="detection-result" hidden>
+            <strong id="detectionCount"></strong>
+            <img id="annotatedImage" alt="Photo with detected livestock outlined and labelled" hidden />
+            <ul id="detectionList"></ul>
+          </div>
+        </div>
+
+      </div>
+      <p class="note">For better photo detection, use a sharp, well-lit photo with every animal visible. The default general-purpose model recognises cows, sheep, horses, and generic birds; a generic bird prediction cannot confirm a hen. Other livestock need a compatible livestock-trained model. Counts are estimates, not guaranteed exact, and detection does not diagnose disease or link animals to physical sensors.</p>
+    </section>
+
+    <section class="card" id="detailCard">
+      <div class="section-title">
+        <h2 id="animalTitle">Animal #07</h2>
+        <span id="statusBadge" class="badge low">LOW</span>
+      </div>
+
+      <div class="grid metrics">
+        <div class="metric"><span>Temperature</span><strong id="temperature">--</strong></div>
+        <div class="metric"><span>Movement</span><strong id="movement">--</strong></div>
+        <div class="metric"><span>Feeding</span><strong id="feeding">--</strong></div>
+        <div class="metric"><span>AI risk score</span><strong id="risk">--</strong></div>
+      </div>
+
+      <div class="reason">
+        <strong>Why was it flagged?</strong>
+        <p id="reason">--</p>
+      </div>
+
+      <div class="actions">
+        <button id="simulateBtn" class="primary">Simulate abnormal condition</button>
+        <button id="callBtn" class="danger" disabled>Call farmer</button>
+        <button id="resetBtn" class="secondary">Reset</button>
+      </div>
+
+      <div id="message" class="message"></div>
+    </section>
+
+    <section class="card flow">
+      <div class="section-title"><h2>System flow</h2></div>
+      <div class="flow-row">
+        <span>CCTV / Sensors</span><b>→</b>
+        <span>AI anomaly detection</span><b>→</b>
+        <span>Animal #07</span><b>→</b>
+        <span>Risk alert</span><b>→</b>
+        <span>Phone call</span>
+      </div>
+    </section>
+  </main>
+
+<script>
+let selectedId = 7;
+let latest = null;
+
+async function loadState() {
+  const res = await fetch("/api/state");
+  latest = await res.json();
+
+  document.getElementById("total").textContent = latest.counts.total;
+  document.getElementById("low").textContent = latest.counts.low;
+  document.getElementById("medium").textContent = latest.counts.medium;
+  document.getElementById("high").textContent = latest.counts.high;
+
+  renderAnimals();
+  selectAnimal(selectedId);
+}
+
+function renderAnimals() {
+  const box = document.getElementById("animalList");
+  box.innerHTML = "";
+
+  for (const a of latest.animals) {
+    const item = document.createElement("button");
+    item.className = "animal-item";
+    item.innerHTML = `
+      <span>Animal #${String(a.id).padStart(2, "0")}</span>
+      <span class="badge ${a.status.toLowerCase()}">${a.status} • ${a.risk}%</span>
+    `;
+    item.onclick = () => selectAnimal(a.id);
+    box.appendChild(item);
+  }
+}
+
+function selectAnimal(id) {
+  selectedId = id;
+  const a = latest.animals.find(x => x.id === id);
+  if (!a) return;
+
+  document.getElementById("animalTitle").textContent = `Animal #${String(a.id).padStart(2, "0")}`;
+  document.getElementById("temperature").textContent = `${a.temperature} °C`;
+  document.getElementById("movement").textContent = `${a.movement}%`;
+  document.getElementById("feeding").textContent = `${a.feeding}%`;
+  document.getElementById("risk").textContent = `${a.risk}%`;
+  document.getElementById("reason").textContent = a.reason;
+
+  const badge = document.getElementById("statusBadge");
+  badge.textContent = a.status;
+  badge.className = `badge ${a.status.toLowerCase()}`;
+
+  document.getElementById("callBtn").disabled = a.status !== "HIGH";
+}
+
+document.getElementById("simulateBtn").onclick = async () => {
+  const res = await fetch("/api/simulate", {method: "POST"});
+  const data = await res.json();
+  document.getElementById("message").textContent = data.message;
+  await loadState();
+  selectedId = 7;
+  selectAnimal(7);
+};
+
+document.getElementById("resetBtn").onclick = async () => {
+  await fetch("/api/reset", {method: "POST"});
+  document.getElementById("message").textContent = "Demo reset.";
+  await loadState();
+};
+
+document.getElementById("callBtn").onclick = async () => {
+  const btn = document.getElementById("callBtn");
+  btn.disabled = true;
+  document.getElementById("message").textContent = "Triggering farmer call...";
+  try {
+    const res = await fetch("/call", {method: "POST"});
+    const data = await res.json();
+    document.getElementById("message").textContent =
+      data.ok ? "Call triggered. Check the verified phone." : data.error;
+  } catch (e) {
+    document.getElementById("message").textContent = "Call failed. Check the terminal and .env.";
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+let cameraStream = null;
+const cameraVideo = document.getElementById("camera");
+
+function setMessage(id, text) {
+  document.getElementById(id).textContent = text;
+}
+
+function waitForVideoReady(video, timeoutMs = 6000) {
+  if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && video.videoWidth > 0) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error("Camera started but no image frame arrived. Close other camera apps and try again."));
+    }, timeoutMs);
+    function cleanup() {
+      clearTimeout(timeout);
+      video.removeEventListener("loadeddata", onReady);
+      video.removeEventListener("error", onError);
+    }
+    function onReady() {
+      if (video.videoWidth > 0) {
+        cleanup();
+        resolve();
+      }
+    }
+    function onError() {
+      cleanup();
+      reject(new Error("The browser could not read the camera feed. Please reopen the camera."));
+    }
+    video.addEventListener("loadeddata", onReady);
+    video.addEventListener("error", onError);
+  });
+}
+
+async function openRearCamera() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    throw new Error("Camera access is unavailable. Open the HTTPS ngrok link and allow camera permission.");
+  }
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+    cameraStream = null;
+  }
+  const rearConstraints = {
+    video: {
+      facingMode: { ideal: "environment" },
+      width: { ideal: 1280 },
+      height: { ideal: 720 }
+    },
+    audio: false
+  };
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { exact: "environment" },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      },
+      audio: false
+    });
+  } catch (exactError) {
+    cameraStream = await navigator.mediaDevices.getUserMedia(rearConstraints);
+  }
+  cameraVideo.srcObject = cameraStream;
+  await cameraVideo.play();
+  await waitForVideoReady(cameraVideo);
+  // Give phone autofocus/exposure a moment to settle before the first scan.
+  await new Promise(resolve => setTimeout(resolve, 700));
+  const trackSettings = cameraStream.getVideoTracks()[0]?.getSettings?.() || {};
+  const rearSelected = trackSettings.facingMode === "environment";
+  const cameraStatus = document.getElementById("cameraStatus");
+  cameraStatus.className = "status-dot is-live";
+  cameraStatus.textContent = rearSelected ? "● LIVE · REAR" : "● LIVE";
+  setMessage("cameraMessage", `Camera preview is ready (${cameraVideo.videoWidth}×${cameraVideo.videoHeight}). To run detection, upload a photo in the Photo detection section below.`);
+}
+
+document.getElementById("cameraBtn").onclick = async () => {
+  const btn = document.getElementById("cameraBtn");
+  btn.disabled = true;
+  setMessage("cameraMessage", "Opening rear camera and waiting for focus...");
+  try {
+    await openRearCamera();
+  } catch (e) {
+    const cameraStatus = document.getElementById("cameraStatus");
+    cameraStatus.className = "status-dot is-blocked";
+    cameraStatus.textContent = "BLOCKED";
+    setMessage("cameraMessage", e.message || "Could not open the rear camera. Check browser permissions.");
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+document.getElementById("stopCameraBtn").onclick = () => {
+  if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+  cameraStream = null;
+  cameraVideo.srcObject = null;
+  const cameraStatus = document.getElementById("cameraStatus");
+  cameraStatus.className = "status-dot is-off";
+  cameraStatus.textContent = "OFF";
+  setMessage("cameraMessage", "Camera stopped.");
+};
+
+function showDetectionResult(data) {
+  document.getElementById("imageResult").hidden = false;
+  document.getElementById("detectionCount").textContent = `Detected ${data.count} livestock animal(s)`;
+  const image = document.getElementById("annotatedImage");
+  image.src = data.annotated_image;
+  image.hidden = false;
+  const list = document.getElementById("detectionList");
+  list.innerHTML = "";
+  if (!data.detections.length) {
+    const item = document.createElement("li");
+    const supported = (data.supported_species || []).join(", ") || "the species in the configured model";
+    item.textContent = `No supported livestock detected. This model supports: ${supported}. Use good lighting, keep the full animal visible, and try again.`;
+    list.appendChild(item);
+  } else {
+    for (const animal of data.detections) {
+      const item = document.createElement("li");
+      item.textContent = `${animal.label} — ${Math.round(animal.confidence * 100)}% confidence`;
+      list.appendChild(item);
+    }
+  }
+}
+
+async function submitImageForDetection(file) {
+  const form = new FormData();
+  form.append("image", file, file.name || "livestock-upload.jpg");
+  setMessage("imageMessage", "Analysing livestock image... The first run may take longer while model weights download.");
+  document.getElementById("imageResult").hidden = true;
+  const response = await fetch("/api/detect", { method: "POST", body: form });
+  let data;
+  try { data = await response.json(); }
+  catch { throw new Error("The server returned an unreadable response. Check the VS Code terminal."); }
+  if (!response.ok || !data.ok) throw new Error(data.error || "Livestock detection failed.");
+  showDetectionResult(data);
+  setMessage("imageMessage", `Scan complete. Model classes: ${(data.supported_species || []).join(", ") || "not reported"}.`);
+}
+
+document.getElementById("detectUploadBtn").onclick = async () => {
+  const file = document.getElementById("imageUpload").files[0];
+  if (!file) {
+    setMessage("imageMessage", "Choose a photo first.");
+    return;
+  }
+  const btn = document.getElementById("detectUploadBtn");
+  btn.disabled = true;
+  try {
+    await submitImageForDetection(file);
+  } catch (e) {
+    setMessage("imageMessage", e.message || "Detection failed. Check the VS Code terminal.");
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+
+loadState();
+setInterval(loadState, 3000);
+</script>
+</body>
+</html>

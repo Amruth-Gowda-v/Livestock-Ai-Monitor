@@ -1,0 +1,130 @@
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, Arial, sans-serif;
+  background: #0b1020;
+  color: #f5f7ff;
+}
+header {
+  padding: 28px 6%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #202946;
+}
+h1 { margin: 6px 0; font-size: 34px; }
+p { color: #aeb8d4; }
+.eyebrow { font-size: 12px; letter-spacing: 2px; color: #7f8cff; }
+.pill, .badge, .status-dot {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.pill { background: #171e38; color: #aeb8ff; }
+main { width: 88%; max-width: 1280px; margin: 28px auto 60px; }
+.grid { display: grid; gap: 16px; }
+.stats { grid-template-columns: repeat(4, 1fr); margin-bottom: 16px; }
+.main-grid { grid-template-columns: 1.3fr 1fr; margin-bottom: 16px; }
+.metrics { grid-template-columns: repeat(4, 1fr); margin: 18px 0; }
+.card {
+  background: #11182d;
+  border: 1px solid #202946;
+  border-radius: 18px;
+  padding: 20px;
+}
+.stat span, .metric span { display:block; color:#8793b8; font-size:13px; }
+.stat strong { display:block; margin-top:8px; font-size:30px; }
+.metric strong { display:block; margin-top:8px; font-size:24px; }
+.section-title { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.section-title h2 { margin: 0; font-size: 18px; }
+#camera {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 62vh;
+  margin: 16px 0;
+  border-radius: 14px;
+  background: #050811;
+  object-fit: contain;
+}
+.note { font-size:12px; color:#7f8ba9; margin-top:12px; }
+.animal-list { margin-top: 15px; max-height: 360px; overflow:auto; }
+.animal-item {
+  width:100%;
+  border: 0;
+  border-bottom: 1px solid #202946;
+  background: transparent;
+  color:#f5f7ff;
+  padding: 13px 4px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  cursor:pointer;
+  text-align:left;
+}
+.animal-item:hover { background:#171f39; }
+.badge.low { background:#183728; color:#70e0a0; }
+.badge.medium { background:#3f3619; color:#ffd76a; }
+.badge.high { background:#451b27; color:#ff879e; }
+.status-dot { background:#241b1f; color:#ff879e; }
+.reason {
+  background:#0c1224;
+  border:1px solid #202946;
+  border-radius:14px;
+  padding:15px;
+}
+.actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
+button {
+  border:0; border-radius:11px; padding:12px 16px; cursor:pointer; font-weight:700;
+}
+.primary { background:#6672ff; color:white; }
+.danger { background:#d94f68; color:white; }
+.secondary { background:#212a45; color:#e8ecff; }
+button:disabled { opacity:.45; cursor:not-allowed; }
+.message {
+  min-height: 22px;
+  margin-top: 12px;
+  color:#aeb8d4;
+  font-size:14px;
+}
+.flow-row {
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:center;
+  gap:12px; color:#c8cff0; text-align:center;
+}
+.flow-row span {
+  padding:11px 14px; border:1px solid #2a3456; border-radius:999px; background:#0c1224;
+}
+.flow-row b { color:#7481ff; }
+@media(max-width:900px) {
+  .stats, .metrics, .main-grid { grid-template-columns:1fr 1fr; }
+}
+@media(max-width:600px) {
+  .stats, .metrics, .main-grid { grid-template-columns:1fr; }
+  header { align-items:flex-start; gap:16px; }
+}
+
+/* Livestock-detection controls */
+.actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+.camera-actions { margin-top: 4px; }
+.detector-card { margin-top: 16px; }
+.detector-card > p { line-height: 1.55; }
+.detector-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+.detector-panel { min-width: 0; padding: 16px; border: 1px solid #202946; border-radius: 14px; background: #0c1224; }
+.detector-panel h3 { margin: 0 0 14px; font-size: 16px; }
+.detector-panel label { display: block; margin: 10px 0 8px; color: #aeb8d4; font-size: 13px; }
+.detector-panel input[type="file"] { display: block; max-width: 100%; width: 100%; margin-bottom: 12px; color: #c8cff0; font-size: 13px; }
+.detector-panel button { margin-top: 6px; }
+.detection-result { margin-top: 16px; }
+#annotatedImage { display: block; width: 100%; height: auto; max-height: 440px; object-fit: contain; margin-top: 12px; border-radius: 10px; background: #050811; }
+#detectionList { padding-left: 22px; color: #c8cff0; line-height: 1.7; }
+#trackedVideo { display: block; width: 100%; max-height: 440px; margin-top: 14px; border-radius: 10px; background: #050811; }
+[hidden] { display: none !important; }
+@media(max-width: 700px) {
+  .detector-grid { grid-template-columns: 1fr; }
+  header { padding: 22px 5%; }
+  h1 { font-size: 28px; }
+  main { width: 92%; }
+}
